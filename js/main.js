@@ -263,6 +263,7 @@ window.onload = function()
     	    shoot = game.add.audio('shoot');
     	    shoot.allowMultiple = true;
     	    music = game.add.audio('music');
+    	    music.play('', 0, .1, true);
     	        	        	    
     	    bloodDict[0] = 'b1';
     	    bloodDict[1] = 'b2';
@@ -297,7 +298,6 @@ window.onload = function()
     	    	    if (firstTime)
     	    	    {
     	    	    	    killIntro();
-    	    	    	    music.play('',0,1,true);
     	    	    	    gameRunning = 1;
     	    	    	    firstTime = 0;
     	    	    }
