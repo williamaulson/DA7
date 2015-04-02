@@ -81,6 +81,7 @@ window.onload = function()
     	    game.load.image('vertwall', 'assets/vertwall.png')
     	    game.load.image('wall', 'assets/wall.png')
     	    game.load.image('arrow', 'assets/arrow.png')
+    	    game.load.image('attackplane', 'assets/attackplane.png')
     	    game.load.spritesheet('dude', 'assets/dude.png', 32, 48);
     	    game.load.spritesheet('dude2', 'assets/dude2.png', 32, 48);
     	    game.load.spritesheet('shot', 'assets/shot.png', 20, 20);
@@ -215,6 +216,25 @@ window.onload = function()
     var guardTopTurn = 0;
     var guardBottomTurn = 1;
     var moveSpeed = 1;
+    var moveSpeedTop = 2;
+    var cursors;
+    var avatar;
+    var avatarDirect = 1;
+    var buttonOneTime = 1;
+    var buttonTwoTime = 1;
+    var buttonThreeTime = 1;
+    var buttonFourTime = 1;
+    var overlapOne = 0;
+    var overlapTwo = 0;
+    var overlapThree = 0;
+    var overlapFour = 0;
+    var avatarOverlap = 1;
+    var wallGroup;
+    var wallGroupSpecial;
+    var doorGroup;
+    var attackplane;
+    var shotFired = 0;
+    var shot;
     
     function create()
     {
@@ -222,6 +242,18 @@ window.onload = function()
     	    game.physics.startSystem(Phaser.Physics.ARCADE);
     	    game.world.setBounds(0, 0, 1024, 576);
     	    game.add.sprite(0, 0, 'back');
+    	    
+    	    attackplane = game.add.sprite(0, 175, 'attackplane');
+    	    game.physics.arcade.enable(attackplane);
+    	    
+    	    wallGroupSpecial = game.add.group();
+    	    game.physics.arcade.enable(wallGroupSpecial);
+    	    
+    	    wallGroup = game.add.group();
+    	    game.physics.arcade.enable(wallGroup);
+    	    
+    	    doorGroup = game.add.group();
+    	    game.physics.arcade.enable(doorGroup);
     	    
     	    startArrow = game.add.sprite(828, 456, 'arrow');
     	    game.physics.arcade.enable(startArrow);
@@ -233,53 +265,67 @@ window.onload = function()
     	    centerLeft = game.add.sprite(190, 276, 'smallwall');
     	    game.physics.arcade.enable(centerLeft);
     	    centerLeft.body.immovable = true;
+    	    wallGroup.add(centerLeft);
     	    centerRight = game.add.sprite(584, 276, 'smallwall');
     	    game.physics.arcade.enable(centerRight);
     	    centerRight.body.immovable = true;
+    	    wallGroup.add(centerRight);
     	    
     	    cellSouth = game.add.sprite(0, 426, 'innerwall');
     	    game.physics.arcade.enable(cellSouth);
     	    cellSouth.body.immovable = true;
+    	    wallGroupSpecial.add(cellSouth);
     	    cellNorth = game.add.sprite(0, 150, 'innerwall');
     	    game.physics.arcade.enable(cellNorth);
     	    cellNorth.body.immovable = true;
+    	    wallGroupSpecial.add(cellNorth);
     	    
     	    cellOne = game.add.sprite(340, 427, 'vertwall');
     	    game.physics.arcade.enable(cellOne);
     	    cellOne.body.immovable = true;
+    	    wallGroup.add(cellOne);
     	    cellTwo = game.add.sprite(684, 427, 'vertwall');
     	    game.physics.arcade.enable(cellTwo);
     	    cellTwo.body.immovable = true;
+    	    wallGroup.add(cellTwo);
     	    cellThree = game.add.sprite(340, 0, 'vertwall');
     	    game.physics.arcade.enable(cellThree);
     	    cellThree.body.immovable = true;
+    	    wallGroup.add(cellThree);
     	    cellFour = game.add.sprite(684, 0, 'vertwall');
     	    game.physics.arcade.enable(cellFour);
     	    cellFour.body.immovable = true;
+    	    wallGroup.add(cellFour);
     	    
     	    wSouth = game.add.sprite(0, 551, 'floor');
     	    game.physics.arcade.enable(wSouth);
     	    wSouth.body.immovable = true;
+    	    wallGroup.add(wSouth);
     	    wNorth = game.add.sprite(0, 0, 'floor');
     	    game.physics.arcade.enable(wNorth);
     	    wNorth.body.immovable = true;
+    	    wallGroup.add(wNorth);
     	    wWest = game.add.sprite(0, 0, 'wall');
     	    game.physics.arcade.enable(wWest);
     	    wWest.body.immovable = true;
+    	    wallGroup.add(wWest);
     	    wEast = game.add.sprite(999, 0, 'wall');
     	    game.physics.arcade.enable(wEast);
     	    wEast.body.immovable = true;
+    	    wallGroup.add(wEast);
     	    
     	    startDoor = game.add.sprite(804, 426, 'door');
     	    game.physics.arcade.enable(startDoor);
     	    startDoor.body.immovable = true;
+    	    doorGroup.add(startDoor);
     	    middleDoor = game.add.sprite(804, 150, 'door');
     	    game.physics.arcade.enable(middleDoor);
     	    middleDoor.body.immovable = true;
+    	    doorGroup.add(middleDoor);
     	    endDoor = game.add.sprite(130, 0, 'door');
     	    game.physics.arcade.enable(endDoor);
     	    endDoor.body.immovable = true;
-    	    
+    	        	    
     	    doorOne = game.add.sprite(-200, -200, 'door');
     	    game.physics.arcade.enable(doorOne);
     	    doorOne.body.immovable = true;
@@ -292,7 +338,7 @@ window.onload = function()
     	    doorFour = game.add.sprite(-200, -200, 'door');
     	    game.physics.arcade.enable(doorFour);
     	    doorFour.body.immovable = true;
-    	    
+    	        	    
     	    /*doorOne = game.add.sprite(470, 150, 'door');
     	    game.physics.arcade.enable(doorOne);
     	    doorOne.body.immovable = true;
@@ -341,6 +387,13 @@ window.onload = function()
     	    game.physics.arcade.enable(guardBottom);
     	    guardBottom.animations.add('left', [0, 1, 2, 3], 10, true);
     	    guardBottom.animations.add('right', [5, 6, 7, 8], 10, true);
+    	    
+    	    avatar = game.add.sprite(950, 480, 'dude');
+    	    game.physics.arcade.enable(avatar);
+    	    avatar.animations.add('left', [0, 1, 2, 3], 10, true);
+    	    avatar.animations.add('right', [5, 6, 7, 8], 10, true);
+    	    
+    	    cursors = game.input.keyboard.createCursorKeys();
     	        	    
     	    bloodDict[0] = 'b1';
     	    bloodDict[1] = 'b2';
@@ -543,17 +596,35 @@ window.onload = function()
     
     function update()
     {
+    	    game.physics.arcade.overlap(avatar, attackplane, checkShot, null, this);
+    	    game.physics.arcade.overlap(avatar, buttonOne, pushOne, null, this);
+    	    game.physics.arcade.overlap(avatar, buttonTwo, pushTwo, null, this);
+    	    game.physics.arcade.overlap(avatar, buttonThree, pushThree, null, this);
+    	    game.physics.arcade.overlap(avatar, buttonFour, pushFour, null, this);
+    	    game.physics.arcade.collide(avatar, wallGroup, null, null, this);
+    	    game.physics.arcade.overlap(avatar, doorGroup, unclipWall, null, this);
+    	    game.physics.arcade.overlap(avatar, doorOne, reachOne, null, this);
+    	    game.physics.arcade.overlap(avatar, doorTwo, reachTwo, null, this);
+    	    game.physics.arcade.overlap(avatar, doorThree, reachThree, null, this);
+    	    game.physics.arcade.overlap(avatar, doorFour, reachFour, null, this);
+    	    game.physics.arcade.overlap(avatar, endDoor, winGame, null, this);
+    	    
+    	    if (avatarOverlap)
+    	    {
+    	    	    game.physics.arcade.collide(avatar, wallGroupSpecial, null, null, this);
+    	    }
+    	    
     	    if (guardTopTurn)
     	    {
     	    	    if (guardTop.body.x <= 80)
     	    	    {
-    	    	    	    guardTop.body.x = guardTop.body.x + moveSpeed;
+    	    	    	    guardTop.body.x = guardTop.body.x + moveSpeedTop;
     	    	    	    guardTop.animations.play('right');
     	    	    	    guardTopTurn = 0;
     	    	    }
     	    	    else
     	    	    {
-    	    	    	    guardTop.body.x = guardTop.body.x - moveSpeed;
+    	    	    	    guardTop.body.x = guardTop.body.x - moveSpeedTop;
     	    	    	    guardTop.animations.play('left');
     	    	    }
     	    }
@@ -561,13 +632,13 @@ window.onload = function()
     	    {
     	    	    if (guardTop.body.x >= 910)
     	    	    {
-    	    	    	    guardTop.body.x = guardTop.body.x - moveSpeed;
+    	    	    	    guardTop.body.x = guardTop.body.x - moveSpeedTop;
     	    	    	    guardTop.animations.play('left');
     	    	    	    guardTopTurn = 1;
     	    	    }
     	    	    else
     	    	    {
-    	    	    	    guardTop.body.x = guardTop.body.x + moveSpeed;
+    	    	    	    guardTop.body.x = guardTop.body.x + moveSpeedTop;
     	    	    	    guardTop.animations.play('right');
     	    	    }
     	    }
@@ -600,6 +671,85 @@ window.onload = function()
     	    	    }
     	    }
     	    
+    	    avatar.body.velocity.x = 0;
+    	    avatar.body.velocity.y = 0;
+    	    if (cursors.up.isDown && cursors.right.isDown)
+    	    {
+    	    	    avatar.body.velocity.y = -200;
+    	    	    avatar.body.velocity.x = 200;
+    	    	    avatar.animations.play('right');
+    	    	    avatarDirect = 0;
+    	    }
+    	    else if (cursors.up.isDown && cursors.left.isDown)
+    	    {
+    	    	    avatar.body.velocity.y = -200;
+    	    	    avatar.body.velocity.x = -200;
+    	    	    avatar.animations.play('left');
+    	    	    avatarDirect = 1;
+    	    }
+    	    else if (cursors.down.isDown && cursors.right.isDown)
+    	    {
+    	    	    avatar.body.velocity.y = 200;
+    	    	    avatar.body.velocity.x = 200;
+    	    	    avatar.animations.play('right');
+    	    	    avatarDirect = 0;
+    	    }
+    	    else if (cursors.left.isDown && cursors.down.isDown)
+    	    {
+    	    	    avatar.body.velocity.y = 200;
+    	    	    avatar.body.velocity.x = -200;
+    	    	    avatar.animations.play('left');
+    	    	    avatarDirect = 1;
+    	    }
+    	    else if (cursors.up.isDown)
+    	    {
+    	    	    avatar.body.velocity.y = -200;
+    	    	    if (avatarDirect)
+    	    	    {
+    	    	    	  avatar.animations.play('left');
+    	    	    }
+    	    	    else
+    	    	    {
+    	    	    	   avatar.animations.play('right');
+    	    	    }
+    	    }
+    	    else if (cursors.down.isDown)
+    	    {
+    	    	    avatar.body.velocity.y = 200;
+    	    	    if (avatarDirect)
+    	    	    {
+    	    	    	  avatar.animations.play('left');
+    	    	    }
+    	    	    else
+    	    	    {
+    	    	    	   avatar.animations.play('right');
+    	    	    }
+    	    }
+    	    else if (cursors.left.isDown)
+    	    {
+    	    	    avatar.body.velocity.x = -200;
+    	    	    avatar.animations.play('left');
+    	    	    avatarDirect = 1;
+    	    }
+    	    else if (cursors.right.isDown)
+    	    {
+    	    	    avatar.body.velocity.x = 200;
+    	    	    avatar.animations.play('right');
+    	    	    avatarDirect = 0;
+    	    }
+    	    else
+    	    {
+    	    	    if (avatarDirect)
+    	    	    {
+    	    	    	  avatar.frame = 0;
+    	    	    }
+    	    	    else
+    	    	    {
+    	    	    	   avatar.frame = 5;
+    	    	    }
+    	    }
+    	    
+    	    avatarOverlap = 1;
     	    
     	   /* if (heartTimer === 1)
     	    {
@@ -1097,6 +1247,190 @@ window.onload = function()
     	    //game.debug.cameraInfo(game.camera, 500, 32);
     	    //game.debug.spriteCoords(game.camera, 32, 32);
     }
+    
+    function checkShot()
+    {
+    	    if (!shotFired)
+    	    {
+    	    	  if ((guardTop.x < avatar.x) && (guardTopTurn === 0) && (avatar.y < 275))
+    	    	  {
+    	    	  	  shot = game.add.sprite(guardTop.x + 5, guardTop.y, 'shot');
+    	    	  	  game.physics.arcade.enable(shot);
+    	    	    	  shot.body.velocity.x = 1000;
+    	    	    	  shot.body.velocity.y = game.rnd.integerInRange(-750, 750);
+    	    	    	  shot.animations.add('shot', [0, 1], 10, true);
+    	    	    	  shot.animations.play('shot');
+    	    	    	  shotFired = 0;
+    	    	  }
+    	    	  else if ((guardTop.x > avatar.x) && (guardTopTurn === 1) && (avatar.y < 275))
+    	    	  {
+    	    	  	  shot = game.add.sprite(guardTop.x - 5, guardTop.y, 'shot');
+    	    	  	  game.physics.arcade.enable(shot);
+    	    	    	  shot.body.velocity.x = -1000;
+    	    	    	  shot.body.velocity.y = game.rnd.integerInRange(-750, 750);
+    	    	    	  shot.animations.add('shot', [0, 1], 10, true);
+    	    	    	  shot.animations.play('shot');
+    	    	    	  shotFired = 0;
+    	    	  }
+    	    	  if ((guardBottom.x < avatar.x) && (guardBottomTurn === 0) && (avatar.y > 275))
+    	    	  {
+    	    	  	  shot = game.add.sprite(guardBottom.x + 5, guardBottom.y, 'shot');
+    	    	  	  game.physics.arcade.enable(shot);
+    	    	    	  shot.body.velocity.x = 1000;
+    	    	    	  shot.body.velocity.y = game.rnd.integerInRange(-750, 750);
+    	    	    	  shot.animations.add('shot', [0, 1], 10, true);
+    	    	    	  shot.animations.play('shot');
+    	    	    	  shotFired = 0;
+    	    	  }
+    	    	  else if ((guardBottom.x > avatar.x) && (guardBottomTurn === 1) && (avatar.y > 275))
+    	    	  {
+    	    	  	  shot = game.add.sprite(guardBottom.x - 5, guardBottom.y, 'shot');
+    	    	  	  game.physics.arcade.enable(shot);
+    	    	    	  shot.body.velocity.x = -1000;
+    	    	    	  shot.body.velocity.y = game.rnd.integerInRange(-750, 750);
+    	    	    	  shot.animations.add('shot', [0, 1], 10, true);
+    	    	    	  shot.animations.play('shot');
+    	    	    	  shotFired = 0;
+    	    	  }
+    	    }
+    }
+    
+    function winGame()
+    {
+    	    //play to win
+    }
+    
+    function unclipWall()
+    {
+    	    avatarOverlap = 0;
+    }
+    
+    function reachOne()
+    {
+    	    avatarOverlap = 0;
+    	    overlapOne = 1;
+    }
+    
+    function reachTwo()
+    {
+    	    avatarOverlap = 0;
+    	    overlapTwo = 1;
+    }
+    
+    function reachThree()
+    {
+    	    avatarOverlap = 0;
+    	    overlapThree = 1;
+    }
+    
+    function reachFour()
+    {
+    	    avatarOverlap = 0;
+    	    overlapFour = 1;
+    }
+    
+    function pushOne()
+    {
+    	    if (buttonOneTime)
+    	    {
+    	    	    buttonCoverOne.x = 824;
+    	    	    buttonCoverOne.y = 35;
+    	    	    buttonOneTime = 0;
+    	    	    doorOne.x = 470;
+    	    	    doorOne.y = 426;
+    	    	    game.time.events.add(Phaser.Timer.SECOND * 10, resetButtonOne, null);
+    	    }
+    }
+    
+    function resetButtonOne()
+    {
+    	    if (!overlapOne)
+    	    {
+    	    	    buttonCoverOne.x = -200;
+    	    	    buttonCoverOne.y = -200;
+    	    	    buttonOneTime = 1;
+    	    	    doorOne.x = -100;
+    	    	    doorOne.y = -100;
+    	    } 
+    }
+    
+    function pushTwo()
+    {
+    	    if (buttonTwoTime)
+    	    {
+    	    	    buttonCoverTwo.x = 482;
+    	    	    buttonCoverTwo.y = 35;
+    	    	    buttonTwoTime = 0;
+    	    	    doorTwo.x = 130;
+    	    	    doorTwo.y = 426;
+    	    	    game.time.events.add(Phaser.Timer.SECOND * 10, resetButtonTwo, null);
+    	    }
+    }
+    
+    function resetButtonTwo()
+    {
+    	    if (!overlapTwo)
+    	    {
+    	    	    buttonCoverTwo.x = -200;
+    	    	    buttonCoverTwo.y = -200;
+    	    	    buttonTwoTime = 1;
+    	    	    doorTwo.x = -100;
+    	    	    doorTwo.y = -100;
+    	    } 
+    }
+    
+    function pushThree()
+    {
+    	    if (buttonThreeTime)
+    	    {
+    	    	    buttonCoverThree.x = 482;
+    	    	    buttonCoverThree.y = 481;
+    	    	    buttonThreeTime = 0;
+    	    	    doorThree.x = 470;
+    	    	    doorThree.y = 150;
+    	    	    game.time.events.add(Phaser.Timer.SECOND * 10, resetButtonThree, null);
+    	    }
+    }
+    
+    function resetButtonThree()
+    {
+    	    if (!overlapThree)
+    	    {
+    	    	    buttonCoverThree.x = -200;
+    	    	    buttonCoverThree.y = -200;
+    	    	    buttonThreeTime = 1;
+    	    	    doorThree.x = -100;
+    	    	    doorThree.y = -100;
+    	    }  
+    }
+    
+    function pushFour()
+    {
+    	    if (buttonFourTime)
+    	    {
+    	    	    buttonCoverFour.x = 155;
+    	    	    buttonCoverFour.y = 481;
+    	    	    buttonFourTime = 0;
+    	    	    doorFour.x = 130;
+    	    	    doorFour.y = 150;
+    	    	    game.time.events.add(Phaser.Timer.SECOND * 10, resetButtonFour, null);
+    	    }
+    }
+    
+    function resetButtonFour()
+    {
+    	    if (!overlapFour)
+    	    {
+    	    	    buttonCoverFour.x = -200;
+    	    	    buttonCoverFour.y = -200;
+    	    	    buttonFourTime = 1;
+    	    	    doorFour.x = -100;
+    	    	    doorFour.y = -100;
+    	    }
+    }
+    
+    
+    
     
     /*function killPlayer1(player, shot)
     {
