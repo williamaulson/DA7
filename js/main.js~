@@ -212,9 +212,6 @@ window.onload = function()
     var doorFour;
     var guardTop;
     var guardBottom;
-    var guardTopTurn = 0;
-    var guardBottomTurn = 1;
-    var moveSpeed = 1;
     
     function create()
     {
@@ -336,8 +333,7 @@ window.onload = function()
     	    game.physics.arcade.enable(guardTop);
     	    guardTop.animations.add('left', [0, 1, 2, 3], 10, true);
     	    guardTop.animations.add('right', [5, 6, 7, 8], 10, true);
-    	    guardTop.frame = 5;
-    	    guardBottom = game.add.sprite(610, 340, 'dude2');
+    	    guardBottom = game.add.sprite(944, 340, 'dude2');
     	    game.physics.arcade.enable(guardBottom);
     	    guardBottom.animations.add('left', [0, 1, 2, 3], 10, true);
     	    guardBottom.animations.add('right', [5, 6, 7, 8], 10, true);
@@ -543,64 +539,6 @@ window.onload = function()
     
     function update()
     {
-    	    if (guardTopTurn)
-    	    {
-    	    	    if (guardTop.body.x <= 80)
-    	    	    {
-    	    	    	    guardTop.body.x = guardTop.body.x + moveSpeed;
-    	    	    	    guardTop.animations.play('right');
-    	    	    	    guardTopTurn = 0;
-    	    	    }
-    	    	    else
-    	    	    {
-    	    	    	    guardTop.body.x = guardTop.body.x - moveSpeed;
-    	    	    	    guardTop.animations.play('left');
-    	    	    }
-    	    }
-    	    else
-    	    {
-    	    	    if (guardTop.body.x >= 910)
-    	    	    {
-    	    	    	    guardTop.body.x = guardTop.body.x - moveSpeed;
-    	    	    	    guardTop.animations.play('left');
-    	    	    	    guardTopTurn = 1;
-    	    	    }
-    	    	    else
-    	    	    {
-    	    	    	    guardTop.body.x = guardTop.body.x + moveSpeed;
-    	    	    	    guardTop.animations.play('right');
-    	    	    }
-    	    }
-    	    if (guardBottomTurn)
-    	    {
-    	    	    if (guardBottom.body.x <= 80)
-    	    	    {
-    	    	    	    guardBottom.body.x = guardBottom.body.x + moveSpeed;
-    	    	    	    guardBottom.animations.play('right');
-    	    	    	    guardBottomTurn = 0;
-    	    	    }
-    	    	    else
-    	    	    {
-    	    	    	    guardBottom.body.x = guardBottom.body.x - moveSpeed;
-    	    	    	    guardBottom.animations.play('left');
-    	    	    }
-    	    }
-    	    else
-    	    {
-    	    	    if (guardBottom.body.x >= 910)
-    	    	    {
-    	    	    	    guardBottom.body.x = guardBottom.body.x - moveSpeed;
-    	    	    	    guardBottom.animations.play('left');
-    	    	    	    guardBottomTurn = 1;
-    	    	    }
-    	    	    else
-    	    	    {
-    	    	    	    guardBottom.body.x = guardBottom.body.x + moveSpeed;
-    	    	    	    guardBottom.animations.play('right');
-    	    	    }
-    	    }
-    	    
-    	    
     	   /* if (heartTimer === 1)
     	    {
     	    	    heartTimer = 0;
