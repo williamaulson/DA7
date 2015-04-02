@@ -85,6 +85,10 @@ window.onload = function()
     	    game.load.spritesheet('dude', 'assets/dude.png', 32, 48);
     	    game.load.spritesheet('dude2', 'assets/dude2.png', 32, 48);
     	    game.load.spritesheet('shot', 'assets/shot.png', 20, 20);
+    	    game.load.audio('shoot', 'assets/shoot.mp3');
+    	    game.load.audio('music', 'assets/music.mp3');
+    	    game.load.audio('death', 'assets/death.mp3');
+    	    //game.load.audio('win', 'assets/win.mp3');
     }
     
    /* var reed;
@@ -233,6 +237,22 @@ window.onload = function()
     var wallGroupSpecial;
     var doorGroup;
     var attackplane;
+    var shotFired = 0;
+    var shot;
+    var deathCount = 0;
+    var blood;
+    var gameRunning = 0;
+    var firstTime = 1;
+    var introBack;
+    var introTitleText;
+    var introText;
+    var textStyle = { font: "60px Arial", fill: "#A30000", align: "center" };
+    var titleStyle = { font: "100px Arial", fill: "#A30000", align: "center" };
+    var guardGroup;
+    var music;
+    var win;
+    var shoot;
+    var death;
     
     function create()
     {
@@ -253,10 +273,13 @@ window.onload = function()
     	    doorGroup = game.add.group();
     	    game.physics.arcade.enable(doorGroup);
     	    
+    	    guardGroup = game.add.group();
+    	    game.physics.arcade.enable(guardGroup);
+    	    
     	    startArrow = game.add.sprite(828, 456, 'arrow');
     	    game.physics.arcade.enable(startArrow);
     	    startArrow.body.immovable = true;
-    	    endArrow = game.add.sprite(154, 30, 'arrow');
+    	    endArrow = game.add.sprite(154, 31, 'arrow');
     	    game.physics.arcade.enable(endArrow);
     	    endArrow.body.immovable = true;
     	    
@@ -320,7 +343,7 @@ window.onload = function()
     	    game.physics.arcade.enable(middleDoor);
     	    middleDoor.body.immovable = true;
     	    doorGroup.add(middleDoor);
-    	    endDoor = game.add.sprite(130, 0, 'door');
+    	    endDoor = game.add.sprite(130, 1, 'door');
     	    game.physics.arcade.enable(endDoor);
     	    endDoor.body.immovable = true;
     	        	    
@@ -337,19 +360,6 @@ window.onload = function()
     	    game.physics.arcade.enable(doorFour);
     	    doorFour.body.immovable = true;
     	        	    
-    	    /*doorOne = game.add.sprite(470, 150, 'door');
-    	    game.physics.arcade.enable(doorOne);
-    	    doorOne.body.immovable = true;
-    	    doorTwo = game.add.sprite(470, 426, 'door');
-    	    game.physics.arcade.enable(doorTwo);
-    	    doorTwo.body.immovable = true;
-    	    doorThree = game.add.sprite(130, 150, 'door');
-    	    game.physics.arcade.enable(doorThree);
-    	    doorThree.body.immovable = true;
-    	    doorFour = game.add.sprite(130, 426, 'door');
-    	    game.physics.arcade.enable(doorFour);
-    	    doorFour.body.immovable = true;*/
-    	    
     	    buttonOne = game.add.sprite(824, 35, 'button');
     	    game.physics.arcade.enable(buttonOne);
     	    buttonOne.body.immovable = true;
@@ -381,10 +391,12 @@ window.onload = function()
     	    guardTop.animations.add('left', [0, 1, 2, 3], 10, true);
     	    guardTop.animations.add('right', [5, 6, 7, 8], 10, true);
     	    guardTop.frame = 5;
+    	    guardGroup.add(guardTop);
     	    guardBottom = game.add.sprite(610, 340, 'dude2');
     	    game.physics.arcade.enable(guardBottom);
     	    guardBottom.animations.add('left', [0, 1, 2, 3], 10, true);
     	    guardBottom.animations.add('right', [5, 6, 7, 8], 10, true);
+    	    guardGroup.add(guardBottom);
     	    
     	    avatar = game.add.sprite(950, 480, 'dude');
     	    game.physics.arcade.enable(avatar);
@@ -392,7 +404,13 @@ window.onload = function()
     	    avatar.animations.add('right', [5, 6, 7, 8], 10, true);
     	    
     	    cursors = game.input.keyboard.createCursorKeys();
-    	        	    
+    	    
+    	    death = game.add.audio('death');
+    	    shoot = game.add.audio('shoot');
+    	    shoot.allowMultiple = true;
+    	    win = game.add.audio('win');
+    	    music = game.add.audio('music');
+    	        	        	    
     	    bloodDict[0] = 'b1';
     	    bloodDict[1] = 'b2';
     	    bloodDict[2] = 'b3';
@@ -402,6 +420,12 @@ window.onload = function()
     	    bloodDict[6] = 'b7';
     	    bloodDict[7] = 'b8';
     	    bloodDict[8] = 'b9';
+    	    
+    	    introBack = game.add.sprite(0, 0, 'back');
+    	    introTitleText = game.add.text(500, 100, 'Escape!', titleStyle);
+    	    introTitleText.anchor.set(0.5);
+    	    introText = game.add.text(500, 250, 'Use the arrow keys to move.\nActivate the buttons to escape.', textStyle);
+    	    introText.anchor.set(0.5);
     	    
     	    game.scale.fullScreenScaleMode = Phaser.ScaleManager.SHOW_ALL;
     	    game.input.onDown.add(fullScreenStart, this);
@@ -587,6 +611,13 @@ window.onload = function()
     	    }
     	    else
     	    {
+    	    	    if (firstTime)
+    	    	    {
+    	    	    	    killIntro();
+    	    	    	    music.play('',0,1,true);
+    	    	    	    gameRunning = 1;
+    	    	    	    firstTime = 0;
+    	    	    }
     	    	    game.scale.startFullScreen(true);
     	    	    game.paused = false;
     	    }
@@ -594,160 +625,168 @@ window.onload = function()
     
     function update()
     {
-    	    game.physics.arcade.overlap(avatar, attackplane, checkShot, null, this);
-    	    game.physics.arcade.overlap(avatar, buttonOne, pushOne, null, this);
-    	    game.physics.arcade.overlap(avatar, buttonTwo, pushTwo, null, this);
-    	    game.physics.arcade.overlap(avatar, buttonThree, pushThree, null, this);
-    	    game.physics.arcade.overlap(avatar, buttonFour, pushFour, null, this);
-    	    game.physics.arcade.collide(avatar, wallGroup, null, null, this);
-    	    game.physics.arcade.overlap(avatar, doorGroup, unclipWall, null, this);
-    	    game.physics.arcade.overlap(avatar, doorOne, reachOne, null, this);
-    	    game.physics.arcade.overlap(avatar, doorTwo, reachTwo, null, this);
-    	    game.physics.arcade.overlap(avatar, doorThree, reachThree, null, this);
-    	    game.physics.arcade.overlap(avatar, doorFour, reachFour, null, this);
-    	    game.physics.arcade.overlap(avatar, endDoor, winGame, null, this);
+    	    if (gameRunning)
+    	    {
+    	    	    game.physics.arcade.overlap(avatar, guardGroup, kill, null, this);
+    	    	    game.physics.arcade.overlap(avatar, attackplane, checkShot, null, this);
+    	    	    game.physics.arcade.overlap(avatar, buttonOne, pushOne, null, this);
+    	    	    game.physics.arcade.overlap(avatar, buttonTwo, pushTwo, null, this);
+    	    	    game.physics.arcade.overlap(avatar, buttonThree, pushThree, null, this);
+    	    	    game.physics.arcade.overlap(avatar, buttonFour, pushFour, null, this);
+    	    	    game.physics.arcade.collide(avatar, wallGroup, null, null, this);
+    	    	    game.physics.arcade.overlap(avatar, doorGroup, unclipWall, null, this);
+    	    	    game.physics.arcade.overlap(avatar, doorOne, reachOne, null, this);
+    	    	    game.physics.arcade.overlap(avatar, doorTwo, reachTwo, null, this);
+    	    	    game.physics.arcade.overlap(avatar, doorThree, reachThree, null, this);
+    	    	    game.physics.arcade.overlap(avatar, doorFour, reachFour, null, this);
+    	    	    game.physics.arcade.overlap(avatar, endDoor, winGame, null, this);
+    	    	    game.physics.arcade.overlap(shot, wallGroup, killShot, null, this);
+    	    	    game.physics.arcade.overlap(shot, wallGroupSpecial, killShot, null, this);
+    	    	    game.physics.arcade.overlap(avatar, shot, killPlayer, null, this);
     	    
-    	    if (avatarOverlap)
-    	    {
-    	    	    game.physics.arcade.collide(avatar, wallGroupSpecial, null, null, this);
-    	    }
+    	    	    if (avatarOverlap)
+    	    	    {
+    	    	    	    game.physics.arcade.collide(avatar, wallGroupSpecial, null, null, this);
+    	    	    }
     	    
-    	    if (guardTopTurn)
-    	    {
-    	    	    if (guardTop.body.x <= 80)
+    	    	    if (guardTopTurn)
     	    	    {
-    	    	    	    guardTop.body.x = guardTop.body.x + moveSpeedTop;
-    	    	    	    guardTop.animations.play('right');
-    	    	    	    guardTopTurn = 0;
+    	    	    	    if (guardTop.body.x <= 80)
+    	    	    	    {
+    	    	    	    	    guardTop.body.x = guardTop.body.x + moveSpeedTop;
+    	    	    	    	    guardTop.animations.play('right');
+    	    	    	    	    guardTopTurn = 0;
+    	    	    	    }
+    	    	    	    else
+    	    	    	    {
+    	    	    	    	    guardTop.body.x = guardTop.body.x - moveSpeedTop;
+    	    	    	    	    guardTop.animations.play('left');
+    	    	    	    }
     	    	    }
     	    	    else
     	    	    {
-    	    	    	    guardTop.body.x = guardTop.body.x - moveSpeedTop;
-    	    	    	    guardTop.animations.play('left');
+    	    	    	    if (guardTop.body.x >= 910)
+    	    	    	    {
+    	    	    	    	    guardTop.body.x = guardTop.body.x - moveSpeedTop;
+    	    	    	    	    guardTop.animations.play('left');
+    	    	    	    	    guardTopTurn = 1;
+    	    	    	    }
+    	    	    	    else
+    	    	    	    {
+    	    	    	    	    guardTop.body.x = guardTop.body.x + moveSpeedTop;
+    	    	    	    	    guardTop.animations.play('right');
+    	    	    	    }
     	    	    }
-    	    }
-    	    else
-    	    {
-    	    	    if (guardTop.body.x >= 910)
+    	    	    if (guardBottomTurn)
     	    	    {
-    	    	    	    guardTop.body.x = guardTop.body.x - moveSpeedTop;
-    	    	    	    guardTop.animations.play('left');
-    	    	    	    guardTopTurn = 1;
+    	    	    	    if (guardBottom.body.x <= 80)
+    	    	    	    {
+    	    	    	    	    guardBottom.body.x = guardBottom.body.x + moveSpeed;
+    	    	    	    	    guardBottom.animations.play('right');
+    	    	    	    	    guardBottomTurn = 0;
+    	    	    	    }
+    	    	    	    else
+    	    	    	    {
+    	    	    	    	    guardBottom.body.x = guardBottom.body.x - moveSpeed;
+    	    	    	    	    guardBottom.animations.play('left');
+    	    	    	    }
     	    	    }
     	    	    else
     	    	    {
-    	    	    	    guardTop.body.x = guardTop.body.x + moveSpeedTop;
-    	    	    	    guardTop.animations.play('right');
+    	    	    	    if (guardBottom.body.x >= 910)
+    	    	    	    {
+    	    	    	    	    guardBottom.body.x = guardBottom.body.x - moveSpeed;
+    	    	    	    	    guardBottom.animations.play('left');
+    	    	    	    	    guardBottomTurn = 1;
+    	    	    	    }
+    	    	    	    else
+    	    	    	    {
+    	    	    	    	    guardBottom.body.x = guardBottom.body.x + moveSpeed;
+    	    	    	    	    guardBottom.animations.play('right');
+    	    	    	    }
     	    	    }
-    	    }
-    	    if (guardBottomTurn)
-    	    {
-    	    	    if (guardBottom.body.x <= 80)
-    	    	    {
-    	    	    	    guardBottom.body.x = guardBottom.body.x + moveSpeed;
-    	    	    	    guardBottom.animations.play('right');
-    	    	    	    guardBottomTurn = 0;
-    	    	    }
-    	    	    else
-    	    	    {
-    	    	    	    guardBottom.body.x = guardBottom.body.x - moveSpeed;
-    	    	    	    guardBottom.animations.play('left');
-    	    	    }
-    	    }
-    	    else
-    	    {
-    	    	    if (guardBottom.body.x >= 910)
-    	    	    {
-    	    	    	    guardBottom.body.x = guardBottom.body.x - moveSpeed;
-    	    	    	    guardBottom.animations.play('left');
-    	    	    	    guardBottomTurn = 1;
-    	    	    }
-    	    	    else
-    	    	    {
-    	    	    	    guardBottom.body.x = guardBottom.body.x + moveSpeed;
-    	    	    	    guardBottom.animations.play('right');
-    	    	    }
-    	    }
     	    
-    	    avatar.body.velocity.x = 0;
-    	    avatar.body.velocity.y = 0;
-    	    if (cursors.up.isDown && cursors.right.isDown)
-    	    {
-    	    	    avatar.body.velocity.y = -200;
-    	    	    avatar.body.velocity.x = 200;
-    	    	    avatar.animations.play('right');
-    	    	    avatarDirect = 0;
-    	    }
-    	    else if (cursors.up.isDown && cursors.left.isDown)
-    	    {
-    	    	    avatar.body.velocity.y = -200;
-    	    	    avatar.body.velocity.x = -200;
-    	    	    avatar.animations.play('left');
-    	    	    avatarDirect = 1;
-    	    }
-    	    else if (cursors.down.isDown && cursors.right.isDown)
-    	    {
-    	    	    avatar.body.velocity.y = 200;
-    	    	    avatar.body.velocity.x = 200;
-    	    	    avatar.animations.play('right');
-    	    	    avatarDirect = 0;
-    	    }
-    	    else if (cursors.left.isDown && cursors.down.isDown)
-    	    {
-    	    	    avatar.body.velocity.y = 200;
-    	    	    avatar.body.velocity.x = -200;
-    	    	    avatar.animations.play('left');
-    	    	    avatarDirect = 1;
-    	    }
-    	    else if (cursors.up.isDown)
-    	    {
-    	    	    avatar.body.velocity.y = -200;
-    	    	    if (avatarDirect)
+    	    	    avatar.body.velocity.x = 0;
+    	    	    avatar.body.velocity.y = 0;
+    	    	    if (cursors.up.isDown && cursors.right.isDown)
     	    	    {
-    	    	    	  avatar.animations.play('left');
+    	    	    	    avatar.body.velocity.y = -200;
+    	    	    	    avatar.body.velocity.x = 200;
+    	    	    	    avatar.animations.play('right');
+    	    	    	    avatarDirect = 0;
+    	    	    }
+    	    	    else if (cursors.up.isDown && cursors.left.isDown)
+    	    	    {
+    	    	    	    avatar.body.velocity.y = -200;
+    	    	    	    avatar.body.velocity.x = -200;
+    	    	    	    avatar.animations.play('left');
+    	    	    	    avatarDirect = 1;
+    	    	    }
+    	    	    else if (cursors.down.isDown && cursors.right.isDown)
+    	    	    {
+    	    	    	    avatar.body.velocity.y = 200;
+    	    	    	    avatar.body.velocity.x = 200;
+    	    	    	    avatar.animations.play('right');
+    	    	    	    avatarDirect = 0;
+    	    	    }
+    	    	    else if (cursors.left.isDown && cursors.down.isDown)
+    	    	    {
+    	    	    	    avatar.body.velocity.y = 200;
+    	    	    	    avatar.body.velocity.x = -200;
+    	    	    	    avatar.animations.play('left');
+    	    	    	    avatarDirect = 1;
+    	    	    }
+    	    	    else if (cursors.up.isDown)
+    	    	    {
+    	    	    	    avatar.body.velocity.y = -200;
+    	    	    	    if (avatarDirect)
+    	    	    	    {
+    	    	    	    	    avatar.animations.play('left');
+    	    	    	    }
+    	    	    	    else
+    	    	    	    {
+    	    	    	    	    avatar.animations.play('right');
+    	    	    	    }
+    	    	    }
+    	    	    else if (cursors.down.isDown)
+    	    	    {
+    	    	    	    avatar.body.velocity.y = 200;
+    	    	    	    if (avatarDirect)
+    	    	    	    {
+    	    	    	    	    avatar.animations.play('left');
+    	    	    	    }
+    	    	    	    else
+    	    	    	    {
+    	    	    	    	    avatar.animations.play('right');
+    	    	    	    }
+    	    	    }
+    	    	    else if (cursors.left.isDown)
+    	    	    {
+    	    	    	    avatar.body.velocity.x = -200;
+    	    	    	    avatar.animations.play('left');
+    	    	    	    avatarDirect = 1;
+    	    	    }
+    	    	    else if (cursors.right.isDown)
+    	    	    {
+    	    	    	    avatar.body.velocity.x = 200;
+    	    	    	    avatar.animations.play('right');
+    	    	    	    avatarDirect = 0;
     	    	    }
     	    	    else
     	    	    {
-    	    	    	   avatar.animations.play('right');
+    	    	    	    if (avatarDirect)
+    	    	    	    {
+    	    	    	    	    avatar.frame = 0;
+    	    	    	    }
+    	    	    	    else
+    	    	    	    {
+    	    	    	    	    avatar.frame = 5;
+    	    	    	    }
     	    	    }
-    	    }
-    	    else if (cursors.down.isDown)
-    	    {
-    	    	    avatar.body.velocity.y = 200;
-    	    	    if (avatarDirect)
-    	    	    {
-    	    	    	  avatar.animations.play('left');
-    	    	    }
-    	    	    else
-    	    	    {
-    	    	    	   avatar.animations.play('right');
-    	    	    }
-    	    }
-    	    else if (cursors.left.isDown)
-    	    {
-    	    	    avatar.body.velocity.x = -200;
-    	    	    avatar.animations.play('left');
-    	    	    avatarDirect = 1;
-    	    }
-    	    else if (cursors.right.isDown)
-    	    {
-    	    	    avatar.body.velocity.x = 200;
-    	    	    avatar.animations.play('right');
-    	    	    avatarDirect = 0;
-    	    }
-    	    else
-    	    {
-    	    	    if (avatarDirect)
-    	    	    {
-    	    	    	  avatar.frame = 0;
-    	    	    }
-    	    	    else
-    	    	    {
-    	    	    	   avatar.frame = 5;
-    	    	    }
-    	    }
     	    
-    	    avatarOverlap = 1;
+    	    	    avatarOverlap = 1;
+    	   	 }
+    	    
     	    
     	   /* if (heartTimer === 1)
     	    {
@@ -1245,34 +1284,152 @@ window.onload = function()
     	    //game.debug.cameraInfo(game.camera, 500, 32);
     	    //game.debug.spriteCoords(game.camera, 32, 32);
     }
-    //shot fired
     
     function checkShot()
     {
-    	    if (!shotFired)
+    	    if (shotFired < 2)
     	    {
-    	    	  if ((guardTop.x < avatar.x) && (guardTopTurn === 0))
+    	    	  if ((guardTop.x < avatar.x) && (guardTopTurn === 0) && (avatar.y < 260))
     	    	  {
-    	    	  	  //fire shot top ->
+    	    	  	  shoot.play('', 0, 0);
+    	    	  	  shot = game.add.sprite(guardTop.x + 5, guardTop.y, 'shot');
+    	    	  	  game.physics.arcade.enable(shot);
+    	    	    	  shot.body.velocity.x = 1000;
+    	    	    	  shot.body.velocity.y = game.rnd.integerInRange(-500, 500);
+    	    	    	  shot.animations.add('shot', [0, 1], 10, true);
+    	    	    	  shot.animations.play('shot');
+    	    	    	  shotFired = shotFired + 1;
     	    	  }
-    	    	  else if ((guardTop.x > avatar.x) && (guardTopTurn === 1))
+    	    	  else if ((guardTop.x > avatar.x) && (guardTopTurn === 1) && (avatar.y < 260))
     	    	  {
-    	    	  	  //fire shot top <-
+    	    	  	  shoot.play('', 0, 0);
+    	    	  	  shot = game.add.sprite(guardTop.x - 5, guardTop.y, 'shot');
+    	    	  	  game.physics.arcade.enable(shot);
+    	    	    	  shot.body.velocity.x = -1000;
+    	    	    	  shot.body.velocity.y = game.rnd.integerInRange(-500, 500);
+    	    	    	  shot.animations.add('shot', [0, 1], 10, true);
+    	    	    	  shot.animations.play('shot');
+    	    	    	  shotFired = shotFired + 1;
     	    	  }
-    	    	  if ((guardBottom.x < avatar.x) && (guardBottomTurn === 0))
+    	    	  if ((guardBottom.x < avatar.x) && (guardBottomTurn === 0) && (avatar.y > 275))
     	    	  {
-    	    	  	  //fire bottom ->
+    	    	  	  shoot.play('', 0, 0);
+    	    	  	  shot = game.add.sprite(guardBottom.x + 5, guardBottom.y, 'shot');
+    	    	  	  game.physics.arcade.enable(shot);
+    	    	    	  shot.body.velocity.x = 1000;
+    	    	    	  shot.body.velocity.y = game.rnd.integerInRange(-500, 500);
+    	    	    	  shot.animations.add('shot', [0, 1], 10, true);
+    	    	    	  shot.animations.play('shot');
+    	    	    	  shotFired = shotFired + 1;
     	    	  }
-    	    	  else if ((guardBottom.x > avatar.x) && (guardBottomTurn === 1))
+    	    	  else if ((guardBottom.x > avatar.x) && (guardBottomTurn === 1) && (avatar.y > 275))
     	    	  {
-    	    	  	  //fire bottom <-
+    	    	  	  shoot.play('', 0, 0);
+    	    	  	  shot = game.add.sprite(guardBottom.x - 5, guardBottom.y, 'shot');
+    	    	  	  game.physics.arcade.enable(shot);
+    	    	    	  shot.body.velocity.x = -1000;
+    	    	    	  shot.body.velocity.y = game.rnd.integerInRange(-500, 500);
+    	    	    	  shot.animations.add('shot', [0, 1], 10, true);
+    	    	    	  shot.animations.play('shot');
+    	    	    	  shotFired = shotFired + 1;
     	    	  }
+    	    }
+    }
+    
+    function killIntro()
+    {
+    	    introBack.destroy();
+    	    introText.destroy();
+    	    introTitleText.destroy();
+    }
+    
+    function kill()
+    {
+    	    death.play('', 0, 1);
+    	    avatar.body.x = 950;
+    	    avatar.body.y = 480;
+    	    deathCount = deathCount + 1;
+    	    if (!(blood == null))
+    	    {
+    	    	  blood.destroy();  
+    	    }
+    	    blood = game.add.sprite(avatar.x, avatar.y, bloodDict[game.rnd.integerInRange(0, 8)]);
+    	    game.time.events.add(Phaser.Timer.SECOND * 2, killBlood, null);
+    	    overlapOne = 0;
+    	    overlapTwo = 0;
+    	    overlapThree = 0;
+    	    overlapFour = 0;
+    	    resetButtonOne();
+    	    resetButtonTwo();
+    	    resetButtonThree();
+    	    resetButtonFour();
+    }
+    
+    function killPlayer(avatar, shot)
+    {
+    	    death.play('', 0, 1);
+    	    avatar.body.x = 950;
+    	    avatar.body.y = 480;
+    	    shot.destroy();
+    	    deathCount = deathCount + 1;
+    	    shotFired = shotFired - 1;
+    	    if (!(blood == null))
+    	    {
+    	    	  blood.destroy();  
+    	    }
+    	    blood = game.add.sprite(avatar.x, avatar.y, bloodDict[game.rnd.integerInRange(0, 8)]);
+    	    game.time.events.add(Phaser.Timer.SECOND * 2, killBlood, null);
+    	    overlapOne = 0;
+    	    overlapTwo = 0;
+    	    overlapThree = 0;
+    	    overlapFour = 0;
+    	    resetButtonOne();
+    	    resetButtonTwo();
+    	    resetButtonThree();
+    	    resetButtonFour();
+    }
+    
+    function killBlood()
+    {
+    	    blood.destroy();
+    }
+    
+    function killShot(shot)
+    {
+    	    shot.destroy();
+    	    shotFired = shotFired - 1;
+    }
+    
+    function changeSpeed()
+    {
+    	    if (moveSpeedTop === 2)
+    	    {
+    	    	    moveSpeedTop = 1;
+    	    }
+    	    else
+    	    {
+    	    	    moveSpeedTop = 2;
+    	    }
+    	    if (moveSpeed === 2)
+    	    {
+    	    	    moveSpeed = 1;
+    	    }
+    	    else
+    	    {
+    	    	    moveSpeed = 2;
     	    }
     }
     
     function winGame()
     {
-    	    //play to win
+    	    music.stop();
+    	    //win.play();
+    	    gameRunning = 0;
+    	    introBack = game.add.sprite(0, 0, 'back');
+    	    introTitleText = game.add.text(500, 100, 'Escape!', titleStyle);
+    	    introTitleText.anchor.set(0.5);
+    	    introText = game.add.text(500, 250, 'You have escaped! Great job!\nYou foresaw ' + deathCount + ' bad future(s).', textStyle);
+    	    introText.anchor.set(0.5);
     }
     
     function unclipWall()
@@ -1308,6 +1465,7 @@ window.onload = function()
     {
     	    if (buttonOneTime)
     	    {
+    	    	    changeSpeed();
     	    	    buttonCoverOne.x = 824;
     	    	    buttonCoverOne.y = 35;
     	    	    buttonOneTime = 0;
@@ -1333,6 +1491,7 @@ window.onload = function()
     {
     	    if (buttonTwoTime)
     	    {
+    	    	    changeSpeed();
     	    	    buttonCoverTwo.x = 482;
     	    	    buttonCoverTwo.y = 35;
     	    	    buttonTwoTime = 0;
@@ -1358,6 +1517,7 @@ window.onload = function()
     {
     	    if (buttonThreeTime)
     	    {
+    	    	    changeSpeed();
     	    	    buttonCoverThree.x = 482;
     	    	    buttonCoverThree.y = 481;
     	    	    buttonThreeTime = 0;
@@ -1383,6 +1543,7 @@ window.onload = function()
     {
     	    if (buttonFourTime)
     	    {
+    	    	    changeSpeed();
     	    	    buttonCoverFour.x = 155;
     	    	    buttonCoverFour.y = 481;
     	    	    buttonFourTime = 0;
